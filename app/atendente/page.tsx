@@ -16,7 +16,22 @@ export default function ControlPanel() {
         return () => socket.close();
     }, [])
 
-    const [currentPassword, setCurrentPassword] = useState()
+  const [currentPassword, setCurrentPassword] = useState()
+  
+  const enviarProxima = () => {
+    ws?.send(JSON.stringify({ type: "next" }));
+  };
+
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:8080");
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "update") setCurrentPassword(msg.senha);
+    };
+
+    return () => ws.close();
+  }, []);
 
   return (
     <div className="w-full h-screen bg-gradient-to-br from-slate-950 to-blue-950 p-8 flex flex-col items-center justify-center">
@@ -38,6 +53,7 @@ export default function ControlPanel() {
 
       <div>
         <Button
+          onClick={enviarProxima}
           className="h-20 text-lg font-semibold gap-2 bg-blue-600 hover:bg-blue-700 text-white"
         >
           Próxima
