@@ -8,15 +8,19 @@ export default function PasswordDisplay(){
     const [currentPassword, setCurrentPassword] = useState(1)
     
    useEffect(() => {
-     const ws = new WebSocket("ws://localhost:8080");
+     const WS_URL = process.env.NEXT_PUBLIC_WS_URL!;
+     const ws = new WebSocket(WS_URL);
 
      ws.onmessage = (event) => {
        const msg = JSON.parse(event.data);
-       if (msg.type === "update") setCurrentPassword(msg.senha);
+       if (msg.type === "update") {
+         setCurrentPassword(msg.senha);
+       }
      };
 
      return () => ws.close();
    }, []);
+
 
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 p-8">
