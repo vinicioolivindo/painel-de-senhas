@@ -3,11 +3,10 @@
     "version": "1.0.0",
     "main": "ws.js",
     "scripts": {
-      "start": "node ws.js"
+        "start": "node ws.js"
     },
     "dependencies": {
-      "ws": "^8.16.0",
-      "sqlite3": "^5.1.7"
+        "better-sqlite3": "^12.5.0",
+        "ws": "^8.16.0"
     }
-  }
-  
+}

@@ -1,57 +1,52 @@
 const { WebSocketServer } = require("ws");
-const sqlite3 = require("sqlite3").verbose();
+const Database = require("better-sqlite3");
+const path = require("path");
 
-const wss = new WebSocketServer({ port: PORT });
+const PORT = process.env.PORT || 8080;
 
+// banco
+const dbPath = path.join(process.cwd(), "database.db");
+const db = new Database(dbPath);
 
-// banco SQLite
-const db = new sqlite3.Database("./database.db");
-
-// cria tabela se não existir
-db.run(`
+// cria tabela
+db.prepare(`
   CREATE TABLE IF NOT EXISTS senha (
     id INTEGER PRIMARY KEY,
     valor INTEGER
   )
-`);
+`).run();
 
-// inicializa senha caso esteja vazia
-db.get("SELECT valor FROM senha WHERE id = 1", (err, row) => {
-  if (!row) {
-    db.run("INSERT INTO senha (id, valor) VALUES (1, 1)");
-  }
-});
+// inicializa senha
+const row = db.prepare("SELECT valor FROM senha WHERE id = 1").get();
+if (!row) {
+  db.prepare("INSERT INTO senha (id, valor) VALUES (1, 1)").run();
+}
+
+const wss = new WebSocketServer({ port: PORT });
 
 wss.on("connection", (ws) => {
-  console.log("Cliente conectado");
-
-  // envia senha atual ao conectar
-  db.get("SELECT valor FROM senha WHERE id = 1", (err, row) => {
-    ws.send(JSON.stringify({ type: "update", senha: row.valor }));
-  });
+  const current = db.prepare("SELECT valor FROM senha WHERE id = 1").get();
+  ws.send(JSON.stringify({ type: "update", senha: current.valor }));
 
   ws.on("message", (data) => {
     const msg = JSON.parse(data);
 
     if (msg.type === "next") {
-      // operação atômica no banco
-      db.run(
-        "UPDATE senha SET valor = valor + 1 WHERE id = 1",
-        function () {
-          db.get("SELECT valor FROM senha WHERE id = 1", (err, row) => {
-            // broadcast
-            wss.clients.forEach((client) => {
-              if (client.readyState === 1) {
-                client.send(
-                  JSON.stringify({ type: "update", senha: row.valor })
-                );
-              }
-            });
-          });
+      db.prepare("UPDATE senha SET valor = valor + 1 WHERE id = 1").run();
+
+      const updated = db
+        .prepare("SELECT valor FROM senha WHERE id = 1")
+        .get();
+
+      wss.clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(
+            JSON.stringify({ type: "update", senha: updated.valor })
+          );
         }
-      );
+      });
     }
   });
 });
 
-console.log("Servidor WebSocket com SQLite rodando na porta 8080");
+console.log(`Servidor WebSocket rodando na porta ${PORT}`);

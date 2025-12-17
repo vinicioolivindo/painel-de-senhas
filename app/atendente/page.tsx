@@ -11,7 +11,8 @@ export default function ControlPanel() {
     const [ws, setWs] = useState<WebSocket | null>(null);
 
     useEffect(() => {
-        const socket = new WebSocket("ws://localhost:8080");
+        const WS_URL = process.env.NEXT_PUBLIC_WS_URL!;
+    const socket = new WebSocket(WS_URL);
         setWs(socket);
         return () => socket.close();
     }, [])
