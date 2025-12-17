@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 export default function ControlPanel() {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [currentPassword, setCurrentPassword] = useState<number>(0);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     const WS_URL = process.env.NEXT_PUBLIC_WS_URL!;
@@ -25,7 +26,15 @@ export default function ControlPanel() {
   }, []);
 
   const enviarProxima = () => {
-    ws?.send(JSON.stringify({ type: "next" }));
+    if (!ws || isBlocked) return;
+
+    ws.send(JSON.stringify({ type: "next" }));
+    setIsBlocked(true);
+
+    // libera após 2 segundos
+    setTimeout(() => {
+      setIsBlocked(false);
+    }, 2000);
   };
 
   return (
@@ -48,9 +57,15 @@ export default function ControlPanel() {
 
       <Button
         onClick={enviarProxima}
-        className="h-20 text-lg font-semibold gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+        disabled={isBlocked}
+        className={`h-20 text-lg font-semibold gap-2 text-white transition
+          ${
+            isBlocked
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
       >
-        Próxima
+        {isBlocked ? "Aguarde..." : "Próxima"}
         <ChevronRight className="w-6 h-6" />
       </Button>
     </div>
